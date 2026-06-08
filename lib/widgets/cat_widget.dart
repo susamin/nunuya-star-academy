@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import 'nunu_painter.dart';
 
 class CatWidget extends StatefulWidget {
   final VoidCallback onTap;
@@ -55,11 +56,9 @@ class _CatWidgetState extends State<CatWidget>
               width: 3,
             ),
           ),
-          child: const Center(
-            child: Text(
-              '🐱',
-              style: TextStyle(fontSize: 96),
-            ),
+          child: CustomPaint(
+            painter: NunuPainter(),
+            size: const Size(200, 200),
           ),
         ),
       ),
