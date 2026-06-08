@@ -14,7 +14,15 @@ class AppStrings {
   static const String version = '版本';
   static const String privacyPolicy = '隱私政策';
   static const String developer = '開發者';
-  static const String resetData = '重置資料（開發測試）';
+  static const String resetData = '重置資料';
+  static const String missionTitle = '每日任務';
+  static const String missionTap50 = '今日點擊 50 次';
+  static const String missionTap150 = '今日點擊 150 次';
+  static const String missionMood = 'Nunu 活力達到 80';
+  static const String missionClaim = '領取';
+  static const String missionClaimed = '已完成 ✓';
+  static const String nuNuEnergy = 'Nunu 的活力';
+  static const String comboLabel = 'COMBO';
   static const String confirmReset = '確認重置';
   static const String confirmResetMsg = '所有遊戲資料將被清除，確定嗎？';
   static const String cancel = '取消';

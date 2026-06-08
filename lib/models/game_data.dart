@@ -1,3 +1,5 @@
+import '../constants/game_constants.dart';
+
 class GameData {
   final int level;
   final int currentHearts;
@@ -11,6 +13,21 @@ class GameData {
   final bool hasClaimedToday;
   final int pendingLoginReward;
 
+  // ── v2 fields ─────────────────────────────────────────────────
+  /// Nunu's energy / mood (0–100). Rises on tap, decays when offline.
+  final int nuNuMood;
+
+  /// ISO-8601 timestamp of last tap, used to calculate mood decay.
+  final String lastActiveTime;
+
+  /// Mission claim state (reset daily via missionDate)
+  final bool mission1Claimed;
+  final bool mission2Claimed;
+  final bool mission3Claimed;
+
+  /// The date string when mission state was last reset
+  final String missionDate;
+
   const GameData({
     required this.level,
     required this.currentHearts,
@@ -23,9 +40,15 @@ class GameData {
     required this.todayDate,
     required this.hasClaimedToday,
     required this.pendingLoginReward,
+    required this.nuNuMood,
+    required this.lastActiveTime,
+    required this.mission1Claimed,
+    required this.mission2Claimed,
+    required this.mission3Claimed,
+    required this.missionDate,
   });
 
-  factory GameData.initial() => const GameData(
+  factory GameData.initial() => GameData(
         level: 1,
         currentHearts: 0,
         totalHeartsTapped: 0,
@@ -37,6 +60,12 @@ class GameData {
         todayDate: '',
         hasClaimedToday: false,
         pendingLoginReward: 0,
+        nuNuMood: GameConstants.moodDefault,
+        lastActiveTime: '',
+        mission1Claimed: false,
+        mission2Claimed: false,
+        mission3Claimed: false,
+        missionDate: '',
       );
 
   GameData copyWith({
@@ -51,6 +80,12 @@ class GameData {
     String? todayDate,
     bool? hasClaimedToday,
     int? pendingLoginReward,
+    int? nuNuMood,
+    String? lastActiveTime,
+    bool? mission1Claimed,
+    bool? mission2Claimed,
+    bool? mission3Claimed,
+    String? missionDate,
   }) {
     return GameData(
       level: level ?? this.level,
@@ -64,6 +99,12 @@ class GameData {
       todayDate: todayDate ?? this.todayDate,
       hasClaimedToday: hasClaimedToday ?? this.hasClaimedToday,
       pendingLoginReward: pendingLoginReward ?? this.pendingLoginReward,
+      nuNuMood: nuNuMood ?? this.nuNuMood,
+      lastActiveTime: lastActiveTime ?? this.lastActiveTime,
+      mission1Claimed: mission1Claimed ?? this.mission1Claimed,
+      mission2Claimed: mission2Claimed ?? this.mission2Claimed,
+      mission3Claimed: mission3Claimed ?? this.mission3Claimed,
+      missionDate: missionDate ?? this.missionDate,
     );
   }
 
@@ -79,6 +120,12 @@ class GameData {
         'todayDate': todayDate,
         'hasClaimedToday': hasClaimedToday,
         'pendingLoginReward': pendingLoginReward,
+        'nuNuMood': nuNuMood,
+        'lastActiveTime': lastActiveTime,
+        'mission1Claimed': mission1Claimed,
+        'mission2Claimed': mission2Claimed,
+        'mission3Claimed': mission3Claimed,
+        'missionDate': missionDate,
       };
 
   factory GameData.fromJson(Map<String, dynamic> json) => GameData(
@@ -93,5 +140,11 @@ class GameData {
         todayDate: json['todayDate'] as String? ?? '',
         hasClaimedToday: json['hasClaimedToday'] as bool? ?? false,
         pendingLoginReward: (json['pendingLoginReward'] as num?)?.toInt() ?? 0,
+        nuNuMood: (json['nuNuMood'] as num?)?.toInt() ?? GameConstants.moodDefault,
+        lastActiveTime: json['lastActiveTime'] as String? ?? '',
+        mission1Claimed: json['mission1Claimed'] as bool? ?? false,
+        mission2Claimed: json['mission2Claimed'] as bool? ?? false,
+        mission3Claimed: json['mission3Claimed'] as bool? ?? false,
+        missionDate: json['missionDate'] as String? ?? '',
       );
 }
