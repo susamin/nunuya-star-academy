@@ -7,58 +7,70 @@ class NunuPainter extends CustomPainter {
   final NunuExpression expression;
   final int level;
 
+  /// 0.0 = eyes open, 1.0 = eyes fully closed (blink)
+  final double blinkProgress;
+
+  /// -1.0 to +1.0: how much the right ear tip flicks outward
+  final double earWiggle;
+
   const NunuPainter({
     this.expression = NunuExpression.idle,
     this.level = 1,
+    this.blinkProgress = 0.0,
+    this.earWiggle = 0.0,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
-    final h = size.height;
     final cx = w / 2;
-    final cy = h / 2;
+    final cy = size.height / 2;
     final r = w * 0.42;
 
-    // ── Base colors ───────────────────────────────────────────
-    const orange = Color(0xFFFF9800);
+    const orange      = Color(0xFFFF9800);
     const stripeColor = Color(0x50E65100);
-    const pink = Color(0xFFFFB6C1);
-    const darkBrown = Color(0xFF5D4037);
+    const pink        = Color(0xFFFFB6C1);
+    const darkBrown   = Color(0xFF5D4037);
     const whiskerColor = Color(0xA0BF8040);
 
-    final bodyPaint = Paint()..color = orange;
+    final bodyPaint    = Paint()..color = orange;
     final innerEarPaint = Paint()..color = pink;
 
-    // ── Accessories (behind ears) ─────────────────────────────
+    // ── Accessories behind ears ───────────────────────────────
     if (level >= 7) _drawCrown(canvas, cx, cy, r);
 
-    // ── Ears ──────────────────────────────────────────────────
+    // ── Ears (with earWiggle on right ear) ───────────────────
+    final wx = earWiggle * r * 0.18;   // horizontal tip offset
+    final wy = earWiggle.abs() * r * 0.06; // slight lift
+
+    // Left ear (subtle counter-wiggle)
     final leftEar = Path()
       ..moveTo(cx - r * 0.7, cy - r * 0.55)
-      ..lineTo(cx - r * 0.38, cy - r * 1.12)
+      ..lineTo(cx - r * 0.38 - earWiggle * r * 0.04, cy - r * 1.12)
       ..lineTo(cx - r * 0.02, cy - r * 0.68)
       ..close();
     canvas.drawPath(leftEar, bodyPaint);
 
+    // Right ear (main wiggle)
     final rightEar = Path()
       ..moveTo(cx + r * 0.7, cy - r * 0.55)
-      ..lineTo(cx + r * 0.38, cy - r * 1.12)
+      ..lineTo(cx + r * 0.38 + wx, cy - r * 1.12 - wy)
       ..lineTo(cx + r * 0.02, cy - r * 0.68)
       ..close();
     canvas.drawPath(rightEar, bodyPaint);
 
-    // Inner ears
+    // Inner left ear
     final leftInner = Path()
       ..moveTo(cx - r * 0.58, cy - r * 0.60)
-      ..lineTo(cx - r * 0.38, cy - r * 1.00)
+      ..lineTo(cx - r * 0.38 - earWiggle * r * 0.03, cy - r * 1.00)
       ..lineTo(cx - r * 0.10, cy - r * 0.72)
       ..close();
     canvas.drawPath(leftInner, innerEarPaint);
 
+    // Inner right ear
     final rightInner = Path()
       ..moveTo(cx + r * 0.58, cy - r * 0.60)
-      ..lineTo(cx + r * 0.38, cy - r * 1.00)
+      ..lineTo(cx + r * 0.38 + wx * 0.65, cy - r * 1.00 - wy * 0.5)
       ..lineTo(cx + r * 0.10, cy - r * 0.72)
       ..close();
     canvas.drawPath(rightInner, innerEarPaint);
@@ -66,7 +78,7 @@ class NunuPainter extends CustomPainter {
     // ── Face circle ───────────────────────────────────────────
     canvas.drawCircle(Offset(cx, cy), r, bodyPaint);
 
-    // ── Accessories (on face) ─────────────────────────────────
+    // ── Accessories on face ───────────────────────────────────
     if (level >= 3 && level < 7) _drawBow(canvas, cx, cy, r);
     if (level >= 5) _drawStarBadge(canvas, cx, cy, r);
     if (level >= 9) _drawSparkles(canvas, cx, cy, r);
@@ -85,7 +97,7 @@ class NunuPainter extends CustomPainter {
       );
     }
 
-    // ── Eyes ──────────────────────────────────────────────────
+    // ── Eyes (blink-aware) ────────────────────────────────────
     _drawEyes(canvas, cx, cy, r, darkBrown);
 
     // ── Nose ──────────────────────────────────────────────────
@@ -100,7 +112,7 @@ class NunuPainter extends CustomPainter {
     // ── Mouth ─────────────────────────────────────────────────
     _drawMouth(canvas, cx, cy, r, darkBrown, w);
 
-    // ── Blush (happy / excited / levelUp) ─────────────────────
+    // ── Blush ─────────────────────────────────────────────────
     if (expression == NunuExpression.happy ||
         expression == NunuExpression.excited ||
         expression == NunuExpression.levelUp) {
@@ -119,16 +131,24 @@ class NunuPainter extends CustomPainter {
     canvas.drawLine(Offset(cx + r * 1.0, cy + r * 0.24), Offset(cx + r * 0.14, cy + r * 0.25), whiskerPaint);
     canvas.drawLine(Offset(cx + r * 0.95, cy + r * 0.38), Offset(cx + r * 0.14, cy + r * 0.32), whiskerPaint);
 
-    // ── Sleeping Zzz ─────────────────────────────────────────
+    // ── Sleeping Zzz ──────────────────────────────────────────
     if (expression == NunuExpression.sleeping) {
       _drawZzz(canvas, cx, cy, r);
     }
   }
 
   // ─────────────────────────────────────────────────────────────
-  //  Eyes
+  //  Eyes  (blink-aware)
   // ─────────────────────────────────────────────────────────────
   void _drawEyes(Canvas canvas, double cx, double cy, double r, Color darkBrown) {
+    // During a blink, override expression with half-closed/closed
+    if (blinkProgress > 0 &&
+        expression == NunuExpression.idle &&
+        expression != NunuExpression.sleeping) {
+      _drawBlinkingEyes(canvas, cx, cy, r, darkBrown);
+      return;
+    }
+
     switch (expression) {
       case NunuExpression.idle:
         _drawIdleEyes(canvas, cx, cy, r, darkBrown);
@@ -140,6 +160,45 @@ class NunuPainter extends CustomPainter {
         _drawSleepingEyes(canvas, cx, cy, r, darkBrown);
       case NunuExpression.levelUp:
         _drawLevelUpEyes(canvas, cx, cy, r);
+    }
+  }
+
+  void _drawBlinkingEyes(Canvas canvas, double cx, double cy, double r, Color darkBrown) {
+    // Smoothly squish the eyes shut then open again
+    final openFactor = 1.0 - blinkProgress; // 1 = open, 0 = closed
+    final eyeWhite = Paint()..color = Colors.white;
+    final pupilPaint = Paint()..color = darkBrown;
+    final shinePaint = Paint()..color = Colors.white;
+
+    for (final sign in [-1.0, 1.0]) {
+      final ex = cx + sign * r * 0.31;
+      final ey = cy - r * 0.08;
+
+      if (openFactor < 0.08) {
+        // Fully closed — draw a simple arc line
+        final closedPaint = Paint()
+          ..color = darkBrown
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = r * 0.07
+          ..strokeCap = StrokeCap.round;
+        final path = Path()
+          ..moveTo(ex - r * 0.20, ey + r * 0.02)
+          ..quadraticBezierTo(ex, ey + r * 0.12, ex + r * 0.20, ey + r * 0.02);
+        canvas.drawPath(path, closedPaint);
+      } else {
+        canvas.drawOval(
+          Rect.fromCenter(
+            center: Offset(ex, ey),
+            width: r * 0.50,
+            height: r * 0.44 * openFactor,
+          ),
+          eyeWhite,
+        );
+        if (openFactor > 0.35) {
+          canvas.drawCircle(Offset(ex, ey), r * 0.15 * openFactor, pupilPaint);
+          canvas.drawCircle(Offset(ex + sign * r * 0.05, ey - r * 0.05 * openFactor), r * 0.055, shinePaint);
+        }
+      }
     }
   }
 
@@ -166,15 +225,13 @@ class NunuPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = r * 0.075
       ..strokeCap = StrokeCap.round;
-
-    // Draw upward-curving arcs (happy squint: ∪ shape)
     for (final sign in [-1.0, 1.0]) {
       final ex = cx + sign * r * 0.31;
       final ey = cy - r * 0.08;
-      final eyePath = Path()
+      final path = Path()
         ..moveTo(ex - r * 0.20, ey)
         ..quadraticBezierTo(ex, ey + r * 0.16, ex + r * 0.20, ey);
-      canvas.drawPath(eyePath, eyePaint);
+      canvas.drawPath(path, eyePaint);
     }
   }
 
@@ -190,12 +247,10 @@ class NunuPainter extends CustomPainter {
     for (final sign in [-1.0, 1.0]) {
       final ex = cx + sign * r * 0.31;
       final ey = cy - r * 0.10;
-      // Larger eyes for excited look
       canvas.drawOval(
         Rect.fromCenter(center: Offset(ex, ey), width: r * 0.60, height: r * 0.54),
         eyeWhite,
       );
-      // Yellow ring highlight
       canvas.drawOval(
         Rect.fromCenter(center: Offset(ex, ey), width: r * 0.60, height: r * 0.54),
         highlightPaint,
@@ -211,15 +266,13 @@ class NunuPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = r * 0.075
       ..strokeCap = StrokeCap.round;
-
-    // Two curved closed lines (— — style with slight curve)
     for (final sign in [-1.0, 1.0]) {
       final ex = cx + sign * r * 0.31;
       final ey = cy - r * 0.10;
-      final eyePath = Path()
+      final path = Path()
         ..moveTo(ex - r * 0.20, ey)
         ..quadraticBezierTo(ex, ey - r * 0.10, ex + r * 0.20, ey);
-      canvas.drawPath(eyePath, eyePaint);
+      canvas.drawPath(path, eyePaint);
     }
   }
 
@@ -229,7 +282,6 @@ class NunuPainter extends CustomPainter {
       ..color = const Color(0xFFFF8F00)
       ..style = PaintingStyle.stroke
       ..strokeWidth = r * 0.03;
-
     for (final sign in [-1.0, 1.0]) {
       final ex = cx + sign * r * 0.31;
       final ey = cy - r * 0.08;
@@ -240,18 +292,14 @@ class NunuPainter extends CustomPainter {
 
   void _drawStar(Canvas canvas, double cx, double cy, double radius, Paint paint) {
     final path = Path();
-    const int points = 5;
+    const points = 5;
     final innerRadius = radius * 0.45;
     for (int i = 0; i < points * 2; i++) {
       final angle = (i * math.pi / points) - math.pi / 2;
-      final r = i.isEven ? radius : innerRadius;
-      final x = cx + r * math.cos(angle);
-      final y = cy + r * math.sin(angle);
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
+      final rad = i.isEven ? radius : innerRadius;
+      final x = cx + rad * math.cos(angle);
+      final y = cy + rad * math.sin(angle);
+      if (i == 0) { path.moveTo(x, y); } else { path.lineTo(x, y); }
     }
     path.close();
     canvas.drawPath(path, paint);
@@ -269,185 +317,132 @@ class NunuPainter extends CustomPainter {
 
     switch (expression) {
       case NunuExpression.sleeping:
-        // Neutral / slightly downward mouth
-        final leftMouth = Path()
+        canvas.drawPath(Path()
           ..moveTo(cx, cy + r * 0.28)
-          ..quadraticBezierTo(cx - r * 0.18, cy + r * 0.36, cx - r * 0.28, cy + r * 0.30);
-        final rightMouth = Path()
+          ..quadraticBezierTo(cx - r * 0.18, cy + r * 0.36, cx - r * 0.28, cy + r * 0.30),
+          mouthPaint);
+        canvas.drawPath(Path()
           ..moveTo(cx, cy + r * 0.28)
-          ..quadraticBezierTo(cx + r * 0.18, cy + r * 0.36, cx + r * 0.28, cy + r * 0.30);
-        canvas.drawPath(leftMouth, mouthPaint);
-        canvas.drawPath(rightMouth, mouthPaint);
-
+          ..quadraticBezierTo(cx + r * 0.18, cy + r * 0.36, cx + r * 0.28, cy + r * 0.30),
+          mouthPaint);
       case NunuExpression.excited:
       case NunuExpression.levelUp:
-        // Wide open happy smile
-        final leftBig = Path()
+        canvas.drawPath(Path()
           ..moveTo(cx, cy + r * 0.28)
-          ..quadraticBezierTo(cx - r * 0.28, cy + r * 0.52, cx - r * 0.40, cy + r * 0.40);
-        final rightBig = Path()
+          ..quadraticBezierTo(cx - r * 0.28, cy + r * 0.52, cx - r * 0.40, cy + r * 0.40),
+          mouthPaint);
+        canvas.drawPath(Path()
           ..moveTo(cx, cy + r * 0.28)
-          ..quadraticBezierTo(cx + r * 0.28, cy + r * 0.52, cx + r * 0.40, cy + r * 0.40);
-        canvas.drawPath(leftBig, mouthPaint);
-        canvas.drawPath(rightBig, mouthPaint);
-
+          ..quadraticBezierTo(cx + r * 0.28, cy + r * 0.52, cx + r * 0.40, cy + r * 0.40),
+          mouthPaint);
       default:
-        // Normal smile
-        final leftMouth = Path()
+        canvas.drawPath(Path()
           ..moveTo(cx, cy + r * 0.28)
-          ..quadraticBezierTo(cx - r * 0.22, cy + r * 0.44, cx - r * 0.32, cy + r * 0.36);
-        final rightMouth = Path()
+          ..quadraticBezierTo(cx - r * 0.22, cy + r * 0.44, cx - r * 0.32, cy + r * 0.36),
+          mouthPaint);
+        canvas.drawPath(Path()
           ..moveTo(cx, cy + r * 0.28)
-          ..quadraticBezierTo(cx + r * 0.22, cy + r * 0.44, cx + r * 0.32, cy + r * 0.36);
-        canvas.drawPath(leftMouth, mouthPaint);
-        canvas.drawPath(rightMouth, mouthPaint);
+          ..quadraticBezierTo(cx + r * 0.22, cy + r * 0.44, cx + r * 0.32, cy + r * 0.36),
+          mouthPaint);
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
-  //  Blush cheeks
-  // ─────────────────────────────────────────────────────────────
   void _drawBlush(Canvas canvas, double cx, double cy, double r) {
     final blushPaint = Paint()..color = const Color(0x55FF69B4);
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(cx - r * 0.60, cy + r * 0.20), width: r * 0.38, height: r * 0.22),
-      blushPaint,
-    );
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(cx + r * 0.60, cy + r * 0.20), width: r * 0.38, height: r * 0.22),
-      blushPaint,
-    );
+    canvas.drawOval(Rect.fromCenter(center: Offset(cx - r * 0.60, cy + r * 0.20), width: r * 0.38, height: r * 0.22), blushPaint);
+    canvas.drawOval(Rect.fromCenter(center: Offset(cx + r * 0.60, cy + r * 0.20), width: r * 0.38, height: r * 0.22), blushPaint);
   }
 
-  // ─────────────────────────────────────────────────────────────
-  //  Sleeping Zzz
-  // ─────────────────────────────────────────────────────────────
   void _drawZzz(Canvas canvas, double cx, double cy, double r) {
-    // Draw small "Z" letters above right ear using path
     final zPaint = Paint()
       ..color = const Color(0xCC64B5F6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = r * 0.06
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
-
     void drawZ(double x, double y, double size) {
-      final path = Path()
+      canvas.drawPath(Path()
         ..moveTo(x, y)
         ..lineTo(x + size, y)
         ..lineTo(x, y + size)
-        ..lineTo(x + size, y + size);
-      canvas.drawPath(path, zPaint);
+        ..lineTo(x + size, y + size), zPaint);
     }
-
     drawZ(cx + r * 0.55, cy - r * 1.15, r * 0.12);
     drawZ(cx + r * 0.70, cy - r * 1.35, r * 0.18);
   }
 
-  // ─────────────────────────────────────────────────────────────
-  //  Lv.3 Bow
-  // ─────────────────────────────────────────────────────────────
   void _drawBow(Canvas canvas, double cx, double cy, double r) {
-    final bowPaint = Paint()..color = const Color(0xFFE91E63);
+    final bowPaint  = Paint()..color = const Color(0xFFE91E63);
     final bowStroke = Paint()
       ..color = const Color(0xFFC2185B)
       ..style = PaintingStyle.stroke
       ..strokeWidth = r * 0.03;
-
     final bx = cx + r * 0.36;
     final by = cy - r * 0.98;
-
-    // Left lobe
     final leftLobe = Path()
       ..moveTo(bx, by)
       ..quadraticBezierTo(bx - r * 0.26, by - r * 0.20, bx - r * 0.30, by + r * 0.04)
       ..quadraticBezierTo(bx - r * 0.14, by + r * 0.06, bx, by);
-    canvas.drawPath(leftLobe, bowPaint);
-    canvas.drawPath(leftLobe, bowStroke);
-
-    // Right lobe
+    canvas..drawPath(leftLobe, bowPaint)..drawPath(leftLobe, bowStroke);
     final rightLobe = Path()
       ..moveTo(bx, by)
       ..quadraticBezierTo(bx + r * 0.26, by - r * 0.20, bx + r * 0.30, by + r * 0.04)
       ..quadraticBezierTo(bx + r * 0.14, by + r * 0.06, bx, by);
-    canvas.drawPath(rightLobe, bowPaint);
-    canvas.drawPath(rightLobe, bowStroke);
-
-    // Center knot
+    canvas..drawPath(rightLobe, bowPaint)..drawPath(rightLobe, bowStroke);
     canvas.drawCircle(Offset(bx, by), r * 0.06, Paint()..color = const Color(0xFFF48FB1));
   }
 
-  // ─────────────────────────────────────────────────────────────
-  //  Lv.5 Star badge (mic stand)
-  // ─────────────────────────────────────────────────────────────
   void _drawStarBadge(Canvas canvas, double cx, double cy, double r) {
-    final micPaint = Paint()..color = const Color(0xFFFFEB3B);
-    final micStroke = Paint()
+    final micPaint   = Paint()..color = const Color(0xFFFFEB3B);
+    final micStroke  = Paint()
       ..color = const Color(0xFFF9A825)
       ..style = PaintingStyle.stroke
       ..strokeWidth = r * 0.035;
-
-    // Small star on right cheek
     _drawStar(canvas, cx + r * 0.70, cy + r * 0.30, r * 0.14, micPaint);
     _drawStar(canvas, cx + r * 0.70, cy + r * 0.30, r * 0.14, micStroke);
   }
 
-  // ─────────────────────────────────────────────────────────────
-  //  Lv.7 Crown
-  // ─────────────────────────────────────────────────────────────
   void _drawCrown(Canvas canvas, double cx, double cy, double r) {
-    final goldPaint = Paint()..color = const Color(0xFFFFD700);
+    final goldPaint  = Paint()..color = const Color(0xFFFFD700);
     final goldStroke = Paint()
       ..color = const Color(0xFFFF8F00)
       ..style = PaintingStyle.stroke
       ..strokeWidth = r * 0.04;
-    final gemPaint = Paint()..color = const Color(0xFFE040FB);
-
-    final topY = cy - r * 1.16;
+    final topY  = cy - r * 1.16;
     final baseY = cy - r * 0.86;
     final halfW = r * 0.48;
-
-    // Crown body (trapezoid base)
     final crown = Path()
       ..moveTo(cx - halfW, baseY)
       ..lineTo(cx - halfW * 0.7, topY + r * 0.18)
-      ..lineTo(cx - halfW * 0.5, baseY - r * 0.08) // left inner dip
-      ..lineTo(cx - halfW * 0.2, topY - r * 0.04) // left peak
-      ..lineTo(cx, baseY - r * 0.08) // center dip
-      ..lineTo(cx + halfW * 0.2, topY - r * 0.04) // right peak
+      ..lineTo(cx - halfW * 0.5, baseY - r * 0.08)
+      ..lineTo(cx - halfW * 0.2, topY - r * 0.04)
+      ..lineTo(cx, baseY - r * 0.08)
+      ..lineTo(cx + halfW * 0.2, topY - r * 0.04)
       ..lineTo(cx + halfW * 0.5, baseY - r * 0.08)
       ..lineTo(cx + halfW * 0.7, topY + r * 0.18)
       ..lineTo(cx + halfW, baseY)
       ..close();
-    canvas.drawPath(crown, goldPaint);
-    canvas.drawPath(crown, goldStroke);
-
-    // Gems
-    canvas.drawCircle(Offset(cx, topY - r * 0.02), r * 0.07, gemPaint);
+    canvas..drawPath(crown, goldPaint)..drawPath(crown, goldStroke);
+    canvas.drawCircle(Offset(cx, topY - r * 0.02), r * 0.07, Paint()..color = const Color(0xFFE040FB));
     canvas.drawCircle(Offset(cx - halfW * 0.2, topY - r * 0.02), r * 0.05, Paint()..color = const Color(0xFF29B6F6));
     canvas.drawCircle(Offset(cx + halfW * 0.2, topY - r * 0.02), r * 0.05, Paint()..color = const Color(0xFF66BB6A));
   }
 
-  // ─────────────────────────────────────────────────────────────
-  //  Lv.9 Sparkles
-  // ─────────────────────────────────────────────────────────────
   void _drawSparkles(Canvas canvas, double cx, double cy, double r) {
     final sparkPaint = Paint()..color = const Color(0xCCFFD740);
-    final positions = [
+    for (final pos in [
       Offset(cx - r * 1.05, cy - r * 0.55),
       Offset(cx + r * 1.05, cy - r * 0.55),
       Offset(cx - r * 1.10, cy + r * 0.20),
       Offset(cx + r * 1.10, cy + r * 0.20),
       Offset(cx, cy - r * 1.22),
-    ];
-    for (final pos in positions) {
+    ]) {
       _drawSparkle(canvas, pos.dx, pos.dy, r * 0.10, sparkPaint);
     }
   }
 
   void _drawSparkle(Canvas canvas, double cx, double cy, double size, Paint paint) {
-    // 4-pointed star / sparkle
-    final path = Path()
+    canvas.drawPath(Path()
       ..moveTo(cx, cy - size)
       ..lineTo(cx + size * 0.25, cy - size * 0.25)
       ..lineTo(cx + size, cy)
@@ -456,11 +451,13 @@ class NunuPainter extends CustomPainter {
       ..lineTo(cx - size * 0.25, cy + size * 0.25)
       ..lineTo(cx - size, cy)
       ..lineTo(cx - size * 0.25, cy - size * 0.25)
-      ..close();
-    canvas.drawPath(path, paint);
+      ..close(), paint);
   }
 
   @override
   bool shouldRepaint(covariant NunuPainter old) =>
-      old.expression != expression || old.level != level;
+      old.expression != expression ||
+      old.level != level ||
+      old.blinkProgress != blinkProgress ||
+      old.earWiggle != earWiggle;
 }
