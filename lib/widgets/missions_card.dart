@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
 import '../constants/game_constants.dart';
 import '../models/game_data.dart';
+import 'glass_card.dart';
 
 class MissionsCard extends StatelessWidget {
   final GameData data;
@@ -11,59 +13,57 @@ class MissionsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Text('📋', style: TextStyle(fontSize: 18)),
-                const SizedBox(width: 6),
-                Text(
-                  AppStrings.missionTitle,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF424242),
-                      ),
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Text('📋', style: TextStyle(fontSize: 17)),
+              SizedBox(width: 8),
+              Text(
+                AppStrings.missionTitle,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  letterSpacing: 0.5,
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _MissionRow(
-              label: AppStrings.missionTap50,
-              icon: '💖',
-              progress: data.todayHeartsTapped,
-              target: GameConstants.mission1Target,
-              reward: GameConstants.mission1Reward,
-              claimed: data.mission1Claimed,
-              onClaim: () => onClaim(1),
-            ),
-            const Divider(height: 20),
-            _MissionRow(
-              label: AppStrings.missionTap150,
-              icon: '💫',
-              progress: data.todayHeartsTapped,
-              target: GameConstants.mission2Target,
-              reward: GameConstants.mission2Reward,
-              claimed: data.mission2Claimed,
-              onClaim: () => onClaim(2),
-            ),
-            const Divider(height: 20),
-            _MissionRow(
-              label: AppStrings.missionMood,
-              icon: '⚡',
-              progress: data.nuNuMood,
-              target: GameConstants.mission3Target,
-              reward: GameConstants.mission3Reward,
-              claimed: data.mission3Claimed,
-              onClaim: () => onClaim(3),
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _MissionRow(
+            label: AppStrings.missionTap50,
+            icon: '💖',
+            progress: data.todayHeartsTapped,
+            target: GameConstants.mission1Target,
+            reward: GameConstants.mission1Reward,
+            claimed: data.mission1Claimed,
+            onClaim: () => onClaim(1),
+          ),
+          Divider(color: AppColors.glassBorder, height: 22),
+          _MissionRow(
+            label: AppStrings.missionTap150,
+            icon: '💫',
+            progress: data.todayHeartsTapped,
+            target: GameConstants.mission2Target,
+            reward: GameConstants.mission2Reward,
+            claimed: data.mission2Claimed,
+            onClaim: () => onClaim(2),
+          ),
+          Divider(color: AppColors.glassBorder, height: 22),
+          _MissionRow(
+            label: AppStrings.missionMood,
+            icon: '⚡',
+            progress: data.nuNuMood,
+            target: GameConstants.mission3Target,
+            reward: GameConstants.mission3Reward,
+            claimed: data.mission3Claimed,
+            onClaim: () => onClaim(3),
+          ),
+        ],
       ),
     );
   }
@@ -100,54 +100,96 @@ class _MissionRow extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(icon, style: const TextStyle(fontSize: 16)),
+            Text(icon, style: const TextStyle(fontSize: 15)),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: claimed ? const Color(0xFF9E9E9E) : const Color(0xFF424242),
-                      decoration: claimed ? TextDecoration.lineThrough : null,
-                    ),
+                style: TextStyle(
+                  color: claimed
+                      ? AppColors.textOnDarkFaint
+                      : AppColors.textOnDarkMuted,
+                  fontSize: 13,
+                  decoration: claimed ? TextDecoration.lineThrough : null,
+                  decorationColor: AppColors.textOnDarkFaint,
+                ),
               ),
             ),
             const SizedBox(width: 8),
             if (claimed)
-              Text(
-                AppStrings.missionClaimed,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: const Color(0xFF9E9E9E),
-                    ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.glassFill,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.glassBorder),
+                ),
+                child: const Text(
+                  AppStrings.missionClaimed,
+                  style: TextStyle(
+                    color: AppColors.textOnDarkFaint,
+                    fontSize: 11,
+                  ),
+                ),
               )
             else
-              FilledButton.tonal(
-                onPressed: canClaim ? onClaim : null,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(64, 30),
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  backgroundColor: canClaim ? const Color(0xFFE91E63) : null,
-                  foregroundColor: canClaim ? Colors.white : null,
+              GestureDetector(
+                onTap: canClaim ? onClaim : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    gradient: canClaim
+                        ? const LinearGradient(
+                            colors: [AppColors.idolPink, Color(0xFFFF1744)],
+                          )
+                        : null,
+                    color: canClaim ? null : AppColors.glassFill,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: canClaim
+                          ? AppColors.idolPink
+                          : AppColors.glassBorder,
+                    ),
+                    boxShadow: canClaim
+                        ? const [
+                            BoxShadow(
+                              color: Color(0x66FF6B9D),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            )
+                          ]
+                        : null,
+                  ),
+                  child: Text(
+                    canClaim
+                        ? '${AppStrings.missionClaim} +$reward❤️'
+                        : '$progress / $target',
+                    style: TextStyle(
+                      color: canClaim
+                          ? Colors.white
+                          : AppColors.textOnDarkFaint,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-                child: Text(canClaim
-                    ? '${AppStrings.missionClaim} +$reward❤️'
-                    : '$progress / $target'),
               ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 7),
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: pct,
             minHeight: 5,
-            backgroundColor: const Color(0xFFEEEEEE),
+            backgroundColor: AppColors.barBackground,
             valueColor: AlwaysStoppedAnimation<Color>(
               claimed
-                  ? const Color(0xFFBDBDBD)
+                  ? AppColors.textOnDarkFaint
                   : _completed
-                      ? const Color(0xFFE91E63)
-                      : const Color(0xFFFF9800),
+                      ? AppColors.idolPink
+                      : const Color(0xFFFFB300),
             ),
           ),
         ),

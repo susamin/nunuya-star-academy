@@ -6,13 +6,8 @@ import '../constants/game_constants.dart';
 import 'nunu_painter.dart';
 
 class CatWidget extends StatefulWidget {
-  /// Called with the combo multiplier (1, 2, or 3) on each tap.
   final void Function(int multiplier) onTap;
-
-  /// Nunu's current mood (0–100) — drives expression.
   final int mood;
-
-  /// Current level — drives costume accessories.
   final int level;
 
   const CatWidget({
@@ -27,21 +22,27 @@ class CatWidget extends StatefulWidget {
 }
 
 class _CatWidgetState extends State<CatWidget>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
+  // ── Bounce animation ──────────────────────────────────────
   late final AnimationController _bounceCtrl;
   late final Animation<double> _scale;
 
-  // ── Combo state ──────────────────────────────────────────
+  // ── Breathing glow animation ──────────────────────────────
+  late final AnimationController _glowCtrl;
+  late final Animation<double> _glowAnim;
+
+  // ── Combo state ───────────────────────────────────────────
   int _comboCount = 0;
   Timer? _comboTimer;
 
-  // ── Expression state ─────────────────────────────────────
+  // ── Expression state ──────────────────────────────────────
   NunuExpression _expression = NunuExpression.idle;
   Timer? _expressionResetTimer;
 
   @override
   void initState() {
     super.initState();
+
     _bounceCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 80),
@@ -49,13 +50,24 @@ class _CatWidgetState extends State<CatWidget>
     _scale = Tween<double>(begin: 1.0, end: 0.86).animate(
       CurvedAnimation(parent: _bounceCtrl, curve: Curves.easeInOut),
     );
+
+    _glowCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+    _glowAnim = Tween<double>(begin: 0.55, end: 1.0).animate(
+      CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOut),
+    );
+
     _updateExpressionFromMood();
   }
 
   @override
-  void didUpdateWidget(CatWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.mood != widget.mood && _expression != NunuExpression.excited) {
+  void didUpdateWidget(CatWidget old) {
+    super.didUpdateWidget(old);
+    if (old.mood != widget.mood &&
+        _expression != NunuExpression.excited &&
+        _expression != NunuExpression.levelUp) {
       _updateExpressionFromMood();
     }
   }
@@ -63,100 +75,94 @@ class _CatWidgetState extends State<CatWidget>
   @override
   void dispose() {
     _bounceCtrl.dispose();
+    _glowCtrl.dispose();
     _comboTimer?.cancel();
     _expressionResetTimer?.cancel();
     super.dispose();
   }
 
-  // ── Expression helpers ────────────────────────────────────
   void _updateExpressionFromMood() {
     if (!mounted) return;
-    NunuExpression newExpr;
+    NunuExpression next;
     if (widget.mood < 20) {
-      newExpr = NunuExpression.sleeping;
+      next = NunuExpression.sleeping;
     } else if (widget.mood >= 80) {
-      newExpr = NunuExpression.happy;
+      next = NunuExpression.happy;
     } else {
-      newExpr = NunuExpression.idle;
+      next = NunuExpression.idle;
     }
     if (_expression != NunuExpression.excited &&
         _expression != NunuExpression.levelUp) {
-      setState(() => _expression = newExpr);
+      setState(() => _expression = next);
     }
   }
 
-  void _setExpressionTemporarily(NunuExpression expr, int durationMs) {
+  void _setTempExpression(NunuExpression expr, int ms) {
     _expressionResetTimer?.cancel();
     setState(() => _expression = expr);
-    _expressionResetTimer = Timer(Duration(milliseconds: durationMs), () {
+    _expressionResetTimer = Timer(Duration(milliseconds: ms), () {
       if (mounted) _updateExpressionFromMood();
     });
   }
 
-  // ── Level-up flash (called from outside via GlobalKey or rebuild) ─
-  void triggerLevelUpExpression() {
-    _setExpressionTemporarily(NunuExpression.levelUp, 2500);
-  }
-
-  // ── Tap handler ───────────────────────────────────────────
   void _handleTap() {
-    // Bounce animation
     _bounceCtrl.forward().then((_) => _bounceCtrl.reverse());
 
-    // Increment combo
     _comboTimer?.cancel();
     _comboCount++;
-
-    // Restart combo window timer
     _comboTimer = Timer(
       Duration(milliseconds: GameConstants.comboWindowMs),
-      () {
-        setState(() => _comboCount = 0);
-        _updateExpressionFromMood();
-      },
+      () => setState(() => _comboCount = 0),
     );
 
     final multiplier = GameConstants.comboMultiplier(_comboCount);
-
-    // Update expression based on combo
     if (multiplier == 3) {
-      _setExpressionTemporarily(NunuExpression.excited, 600);
+      _setTempExpression(NunuExpression.excited, 600);
     } else if (multiplier == 2) {
-      _setExpressionTemporarily(NunuExpression.happy, 600);
+      _setTempExpression(NunuExpression.happy, 600);
     }
 
-    setState(() {}); // refresh combo display
-
+    setState(() {});
     widget.onTap(multiplier);
   }
 
-  // ── Combo display ─────────────────────────────────────────
-  Color get _comboColor {
+  Color get _comboGradientStart {
     final m = GameConstants.comboMultiplier(_comboCount);
     if (m == 3) return const Color(0xFFE040FB);
     if (m == 2) return const Color(0xFFFF5722);
     return Colors.transparent;
   }
 
+  Color get _comboGradientEnd {
+    final m = GameConstants.comboMultiplier(_comboCount);
+    if (m == 3) return const Color(0xFF9C27B0);
+    if (m == 2) return const Color(0xFFE91E63);
+    return Colors.transparent;
+  }
+
   @override
   Widget build(BuildContext context) {
     final multiplier = GameConstants.comboMultiplier(_comboCount);
+    final showCombo = _comboCount >= GameConstants.combo2xThreshold;
 
     return Column(
       children: [
-        // ── Combo badge ──────────────────────────────────
+        // ── Combo badge ──────────────────────────────────────
         AnimatedOpacity(
-          opacity: _comboCount >= GameConstants.combo2xThreshold ? 1.0 : 0.0,
+          opacity: showCombo ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 200),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
             decoration: BoxDecoration(
-              color: _comboColor,
+              gradient: LinearGradient(
+                colors: [_comboGradientStart, _comboGradientEnd],
+              ),
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.glassBorder),
               boxShadow: [
                 BoxShadow(
-                  color: _comboColor.withAlpha(120),
-                  blurRadius: 10,
+                  color: _comboGradientStart.withAlpha(120),
+                  blurRadius: 14,
                   spreadRadius: 1,
                 ),
               ],
@@ -172,37 +178,57 @@ class _CatWidgetState extends State<CatWidget>
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
 
-        // ── Cat ───────────────────────────────────────────
+        // ── Cat with breathing glow ───────────────────────────
         GestureDetector(
           onTap: _handleTap,
-          child: ScaleTransition(
-            scale: _scale,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.primaryBorder,
-                  width: 3,
+          child: AnimatedBuilder(
+            animation: _glowAnim,
+            builder: (_, child) {
+              return Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color.fromRGBO(255, 152, 0,
+                          0.55 * _glowAnim.value), // orange
+                      blurRadius: 36 * _glowAnim.value,
+                      spreadRadius: 6 * _glowAnim.value,
+                    ),
+                    BoxShadow(
+                      color: Color.fromRGBO(255, 107, 157,
+                          0.40 * _glowAnim.value), // pink
+                      blurRadius: 58 * _glowAnim.value,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryBorder.withAlpha(80),
-                    blurRadius: 16,
-                    spreadRadius: 2,
+                child: child,
+              );
+            },
+            child: ScaleTransition(
+              scale: _scale,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.glassFill,
+                  border: Border.all(
+                    color: AppColors.glassBorder,
+                    width: 2.5,
                   ),
-                ],
-              ),
-              child: CustomPaint(
-                painter: NunuPainter(
-                  expression: _expression,
-                  level: widget.level,
                 ),
-                size: const Size(200, 200),
+                child: CustomPaint(
+                  painter: NunuPainter(
+                    expression: _expression,
+                    level: widget.level,
+                  ),
+                  size: const Size(220, 220),
+                ),
               ),
             ),
           ),

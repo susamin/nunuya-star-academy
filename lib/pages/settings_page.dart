@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
 import '../providers/game_provider.dart';
+import '../widgets/glass_card.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -24,35 +26,98 @@ class SettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.settings)),
-      body: ListView(
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: const Text(AppStrings.settings),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: Stack(
         children: [
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text(AppStrings.version),
-            trailing: const Text(AppStrings.versionNumber),
-          ),
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text(AppStrings.developer),
-            trailing: const Text(AppStrings.nunuyaGames),
-          ),
-          ListTile(
-            leading: const Icon(Icons.privacy_tip_outlined),
-            title: const Text(AppStrings.privacyPolicy),
-            trailing: const Icon(Icons.open_in_new, size: 16),
-            onTap: () => _launchPrivacyPolicy(context),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.refresh, color: Colors.red),
-            title: const Text(
-              AppStrings.resetData,
-              style: TextStyle(color: Colors.red),
+          // Gradient background
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: AppColors.bgGradient,
+              ),
             ),
-            onTap: () => _confirmReset(context, ref),
+          ),
+          SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              children: [
+                _sectionLabel('遊戲資訊'),
+                const SizedBox(height: 8),
+                GlassCard(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      _GlassTile(
+                        icon: Icons.info_outline,
+                        label: AppStrings.version,
+                        trailing: Text(
+                          AppStrings.versionNumber,
+                          style: const TextStyle(color: AppColors.textOnDarkMuted),
+                        ),
+                      ),
+                      Divider(height: 1, color: AppColors.glassBorder),
+                      _GlassTile(
+                        icon: Icons.person_outline,
+                        label: AppStrings.developer,
+                        trailing: Text(
+                          AppStrings.nunuyaGames,
+                          style: const TextStyle(color: AppColors.textOnDarkMuted),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _sectionLabel('法律'),
+                const SizedBox(height: 8),
+                GlassCard(
+                  padding: EdgeInsets.zero,
+                  child: _GlassTile(
+                    icon: Icons.privacy_tip_outlined,
+                    label: AppStrings.privacyPolicy,
+                    trailing: const Icon(
+                      Icons.open_in_new,
+                      size: 15,
+                      color: AppColors.lavender,
+                    ),
+                    onTap: () => _launchPrivacyPolicy(context),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _sectionLabel('資料'),
+                const SizedBox(height: 8),
+                GlassCard(
+                  padding: EdgeInsets.zero,
+                  child: _GlassTile(
+                    icon: Icons.refresh,
+                    label: AppStrings.resetData,
+                    iconColor: AppColors.roseRed,
+                    labelColor: AppColors.roseRed,
+                    onTap: () => _confirmReset(context, ref),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: AppColors.textOnDarkFaint,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.0,
       ),
     );
   }
@@ -73,10 +138,56 @@ class SettingsPage extends ConsumerWidget {
               ref.read(gameProvider.notifier).resetData();
               Navigator.of(ctx).pop();
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.roseRed),
             child: const Text(AppStrings.reset),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _GlassTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  final Color iconColor;
+  final Color labelColor;
+
+  const _GlassTile({
+    required this.icon,
+    required this.label,
+    this.trailing,
+    this.onTap,
+    this.iconColor = AppColors.lavender,
+    this.labelColor = Colors.white,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, color: iconColor, size: 20),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: labelColor,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ?trailing,
+          ],
+        ),
       ),
     );
   }

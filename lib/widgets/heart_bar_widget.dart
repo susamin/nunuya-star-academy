@@ -18,7 +18,7 @@ class HeartBarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMax = level >= maxLevel;
-    final progress = isMax ? 1.0 : (current / total).clamp(0.0, 1.0);
+    final pct = isMax ? 1.0 : (current / total).clamp(0.0, 1.0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -27,30 +27,72 @@ class HeartBarWidget extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Lv.$level',
+              isMax ? 'MAX ✨' : 'Lv.$level → Lv.${level + 1}',
               style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
+                color: AppColors.textOnDarkMuted,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
               ),
             ),
             Text(
-              isMax ? 'MAX ✨' : '$current / $total ❤️',
+              isMax ? '★ 傳奇等級 ★' : '$current / $total ❤️',
               style: const TextStyle(
-                color: AppColors.textLight,
+                color: AppColors.idolPink,
                 fontSize: 12,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 14,
-            backgroundColor: AppColors.heartRedLight,
-            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.heartRed),
-          ),
+        const SizedBox(height: 7),
+        // Gradient progress bar
+        LayoutBuilder(
+          builder: (_, constraints) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Stack(
+                children: [
+                  // Track
+                  Container(
+                    height: 14,
+                    width: constraints.maxWidth,
+                    color: AppColors.barBackground,
+                  ),
+                  // Fill with gradient
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: pct),
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeOut,
+                    builder: (_, value, _) {
+                      return Container(
+                        height: 14,
+                        width: constraints.maxWidth * value,
+                        decoration: const BoxDecoration(
+                          gradient: AppColors.heartBarGradient,
+                        ),
+                      );
+                    },
+                  ),
+                  // Shine overlay
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Color(0x33FFFFFF), Colors.transparent],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ],
     );
