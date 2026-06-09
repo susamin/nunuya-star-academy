@@ -38,6 +38,9 @@ class GameNotifier extends StateNotifier<GameData> {
         mission2Claimed: false,
         mission3Claimed: false,
         missionDate: today,
+        rhythmPlaysToday: 0,
+        fishPlaysToday: 0,
+        memoryPlaysToday: 0,
       );
     }
 
@@ -102,11 +105,68 @@ class GameNotifier extends StateNotifier<GameData> {
         mission2Claimed: false,
         mission3Claimed: false,
         missionDate: today,
+        rhythmPlaysToday: 0,
+        fishPlaysToday: 0,
+        memoryPlaysToday: 0,
       );
     }
 
     state = data;
     _save();
+  }
+
+  // ── Mini-game support ───────────────────────────────────────
+  /// Hearts gained from a mini-game. Optional [moodGain] is added to mood.
+  /// [gameId] = 'rhythm' | 'fish' | 'memory' (increments play counter).
+  void addMinigameReward({
+    required String gameId,
+    required int hearts,
+    int moodGain = 0,
+  }) {
+    var data = state;
+
+    // Bump play count for this game
+    switch (gameId) {
+      case 'rhythm':
+        data = data.copyWith(rhythmPlaysToday: data.rhythmPlaysToday + 1);
+      case 'fish':
+        data = data.copyWith(fishPlaysToday: data.fishPlaysToday + 1);
+      case 'memory':
+        data = data.copyWith(memoryPlaysToday: data.memoryPlaysToday + 1);
+    }
+
+    if (hearts <= 0 && moodGain <= 0) {
+      state = data;
+      _save();
+      return;
+    }
+
+    if (moodGain > 0) {
+      final newMood = (data.nuNuMood + moodGain).clamp(0, GameConstants.moodMax);
+      data = data.copyWith(nuNuMood: newMood);
+    }
+
+    if (hearts > 0) {
+      final newTotal = data.totalHeartsTapped + hearts;
+      data = data.copyWith(
+        totalHeartsTapped: newTotal,
+        lastActiveTime: DateTime.now().toIso8601String(),
+      );
+      data = _applyHearts(data, hearts);
+    }
+
+    state = data.copyWith(fans: _calculateFans(data));
+    _save();
+  }
+
+  bool canPlay(String gameId) {
+    final limit = 5; // matches MinigameConstants.dailyPlaysPerGame
+    switch (gameId) {
+      case 'rhythm': return state.rhythmPlaysToday < limit;
+      case 'fish':   return state.fishPlaysToday < limit;
+      case 'memory': return state.memoryPlaysToday < limit;
+    }
+    return false;
   }
 
   GameData _decayMood(GameData data) {

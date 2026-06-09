@@ -28,6 +28,11 @@ class GameData {
   /// The date string when mission state was last reset
   final String missionDate;
 
+  // ── Mini-game daily play counts (reset by missionDate) ────────
+  final int rhythmPlaysToday;
+  final int fishPlaysToday;
+  final int memoryPlaysToday;
+
   const GameData({
     required this.level,
     required this.currentHearts,
@@ -46,6 +51,9 @@ class GameData {
     required this.mission2Claimed,
     required this.mission3Claimed,
     required this.missionDate,
+    required this.rhythmPlaysToday,
+    required this.fishPlaysToday,
+    required this.memoryPlaysToday,
   });
 
   factory GameData.initial() => GameData(
@@ -66,6 +74,9 @@ class GameData {
         mission2Claimed: false,
         mission3Claimed: false,
         missionDate: '',
+        rhythmPlaysToday: 0,
+        fishPlaysToday: 0,
+        memoryPlaysToday: 0,
       );
 
   GameData copyWith({
@@ -86,6 +97,9 @@ class GameData {
     bool? mission2Claimed,
     bool? mission3Claimed,
     String? missionDate,
+    int? rhythmPlaysToday,
+    int? fishPlaysToday,
+    int? memoryPlaysToday,
   }) {
     return GameData(
       level: level ?? this.level,
@@ -105,6 +119,9 @@ class GameData {
       mission2Claimed: mission2Claimed ?? this.mission2Claimed,
       mission3Claimed: mission3Claimed ?? this.mission3Claimed,
       missionDate: missionDate ?? this.missionDate,
+      rhythmPlaysToday: rhythmPlaysToday ?? this.rhythmPlaysToday,
+      fishPlaysToday: fishPlaysToday ?? this.fishPlaysToday,
+      memoryPlaysToday: memoryPlaysToday ?? this.memoryPlaysToday,
     );
   }
 
@@ -126,6 +143,9 @@ class GameData {
         'mission2Claimed': mission2Claimed,
         'mission3Claimed': mission3Claimed,
         'missionDate': missionDate,
+        'rhythmPlaysToday': rhythmPlaysToday,
+        'fishPlaysToday': fishPlaysToday,
+        'memoryPlaysToday': memoryPlaysToday,
       };
 
   factory GameData.fromJson(Map<String, dynamic> json) => GameData(
@@ -146,5 +166,8 @@ class GameData {
         mission2Claimed: json['mission2Claimed'] as bool? ?? false,
         mission3Claimed: json['mission3Claimed'] as bool? ?? false,
         missionDate: json['missionDate'] as String? ?? '',
+        rhythmPlaysToday: (json['rhythmPlaysToday'] as num?)?.toInt() ?? 0,
+        fishPlaysToday: (json['fishPlaysToday'] as num?)?.toInt() ?? 0,
+        memoryPlaysToday: (json['memoryPlaysToday'] as num?)?.toInt() ?? 0,
       );
 }

@@ -4,7 +4,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
 import '../providers/game_provider.dart';
 import '../widgets/nunu_painter.dart';
-import 'home_page.dart';
+import 'main_scaffold.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
@@ -41,7 +41,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
     if (mounted) {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder<void>(
-          pageBuilder: (_, _, _) => const HomePage(),
+          pageBuilder: (_, _, _) => const MainScaffold(),
           transitionsBuilder: (_, anim, _, child) =>
               FadeTransition(opacity: anim, child: child),
           transitionDuration: const Duration(milliseconds: 600),
