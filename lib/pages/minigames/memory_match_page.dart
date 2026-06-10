@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_strings.dart';
@@ -73,6 +74,7 @@ class _MemoryMatchPageState extends ConsumerState<MemoryMatchPage> {
 
     if (_firstPick!.emoji == c.emoji) {
       // Match!
+      HapticFeedback.lightImpact();
       setState(() {
         _firstPick!.matched = true;
         c.matched = true;

@@ -17,60 +17,116 @@ class DailyLoginDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Text(
-        AppStrings.dailyLogin,
-        textAlign: TextAlign.center,
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(7, (i) {
-              final day = i + 1;
-              return _DayCircle(
-                day: day,
-                reward: GameConstants.dailyLoginRewards[i],
-                isClaimed: day < cycleDay,
-                isToday: day == cycleDay,
-              );
-            }),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 22),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF3D1C6E), Color(0xFF2D0A52)],
           ),
-          const SizedBox(height: 24),
-          const Text(
-            '今日獎勵',
-            style: TextStyle(color: AppColors.textLight, fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '❤️ × $rewardHearts',
-            style: const TextStyle(
-              color: AppColors.heartRed,
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: AppColors.glassBorder, width: 1.2),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x66FF6B9D),
+              blurRadius: 36,
+              spreadRadius: 2,
             ),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-      actions: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: onClaim,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-            child: const Text(
-              AppStrings.claim,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
+          ],
         ),
-      ],
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Title with gold stars
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Text('✦', style: TextStyle(color: AppColors.starGold, fontSize: 14)),
+                SizedBox(width: 8),
+                Text(
+                  AppStrings.dailyLogin,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                SizedBox(width: 8),
+                Text('✦', style: TextStyle(color: AppColors.starGold, fontSize: 14)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            // 7-day strip
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(7, (i) {
+                final day = i + 1;
+                return _DayCircle(
+                  day: day,
+                  reward: GameConstants.dailyLoginRewards[i],
+                  isClaimed: day < cycleDay,
+                  isToday: day == cycleDay,
+                );
+              }),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              '今日獎勵',
+              style: TextStyle(color: AppColors.textOnDarkMuted, fontSize: 13),
+            ),
+            const SizedBox(height: 6),
+            ShaderMask(
+              shaderCallback: (b) => const LinearGradient(
+                colors: [AppColors.starGold, AppColors.idolPink],
+              ).createShader(b),
+              child: Text(
+                '❤️ × $rewardHearts',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Gradient claim button
+            GestureDetector(
+              onTap: onClaim,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.idolPink, Color(0xFFFF1744)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x88FF6B9D),
+                      blurRadius: 16,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Text(
+                    AppStrings.claim,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -90,41 +146,83 @@ class _DayCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color bg;
-    final Color fg;
-
+    final Widget circle;
     if (isToday) {
-      bg = AppColors.primary;
-      fg = Colors.white;
+      circle = Container(
+        width: 36,
+        height: 36,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            colors: [AppColors.idolPink, Color(0xFFFF1744)],
+          ),
+          boxShadow: [
+            BoxShadow(color: Color(0x99FF6B9D), blurRadius: 12, spreadRadius: 1),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            '$day',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      );
     } else if (isClaimed) {
-      bg = AppColors.heartRedClaimed;
-      fg = Colors.white;
+      circle = Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0x33FF6B9D),
+          border: Border.all(color: AppColors.idolPink, width: 1.2),
+        ),
+        child: const Center(
+          child: Text(
+            '✓',
+            style: TextStyle(
+              color: AppColors.idolPink,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      );
     } else {
-      bg = const Color(0xFFEEEEEE);
-      fg = AppColors.textLight;
+      circle = Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.glassFill,
+          border: Border.all(color: AppColors.glassBorder),
+        ),
+        child: Center(
+          child: Text(
+            '$day',
+            style: const TextStyle(
+              color: AppColors.textOnDarkFaint,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      );
     }
 
     return Column(
       children: [
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-          child: Center(
-            child: Text(
-              isClaimed ? '✓' : '$day',
-              style: TextStyle(
-                color: fg,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 3),
+        circle,
+        const SizedBox(height: 4),
         Text(
           '❤️$reward',
-          style: const TextStyle(fontSize: 9, color: AppColors.textLight),
+          style: TextStyle(
+            fontSize: 9,
+            color: isToday ? AppColors.starGold : AppColors.textOnDarkFaint,
+          ),
         ),
       ],
     );

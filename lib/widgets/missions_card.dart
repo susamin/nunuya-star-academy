@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
 import '../constants/game_constants.dart';
@@ -134,7 +135,12 @@ class _MissionRow extends StatelessWidget {
               )
             else
               GestureDetector(
-                onTap: canClaim ? onClaim : null,
+                onTap: canClaim
+                    ? () {
+                        HapticFeedback.mediumImpact();
+                        onClaim();
+                      }
+                    : null,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),

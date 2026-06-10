@@ -13,6 +13,7 @@ import '../widgets/floating_heart.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/heart_bar_widget.dart';
 import '../widgets/level_badge_widget.dart';
+import '../widgets/level_up_overlay.dart';
 import '../widgets/missions_card.dart';
 import '../widgets/mood_bar_widget.dart';
 import 'settings_page.dart';
@@ -87,32 +88,12 @@ class _HomePageState extends ConsumerState<HomePage> {
     final data = ref.watch(gameProvider);
 
     ref.listen<GameData>(gameProvider, (prev, next) {
-      if (prev != null && prev.level != next.level) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Text('🎉', style: TextStyle(fontSize: 18)),
-                const SizedBox(width: 8),
-                Text(
-                  '${AppStrings.levelUp} Lv.${next.level} '
-                  '${GameConstants.titleForLevel(next.level)}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: const Color(0xFF6B2FA0),
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-              side: const BorderSide(color: AppColors.glassBorder),
-            ),
-          ),
+      if (prev != null && next.level > prev.level) {
+        HapticFeedback.heavyImpact();
+        LevelUpOverlay.show(
+          context,
+          newLevel: next.level,
+          newTitle: GameConstants.titleForLevel(next.level),
         );
       }
     });

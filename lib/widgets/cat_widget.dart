@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
 import '../constants/game_constants.dart';
@@ -186,9 +187,13 @@ class _CatWidgetState extends State<CatWidget>
 
     final multiplier = GameConstants.comboMultiplier(_comboCount);
     if (multiplier == 3) {
+      HapticFeedback.mediumImpact();
       _setTempExpression(NunuExpression.excited, 600);
     } else if (multiplier == 2) {
+      HapticFeedback.lightImpact();
       _setTempExpression(NunuExpression.happy, 600);
+    } else {
+      HapticFeedback.selectionClick();
     }
 
     setState(() {});

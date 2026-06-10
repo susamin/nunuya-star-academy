@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_strings.dart';
@@ -120,8 +121,10 @@ class _CatchFishPageState extends ConsumerState<CatchFishPage> {
         f.caught = true;
         if (f.gold) {
           _goldCaught++;
+          HapticFeedback.mediumImpact();
         } else {
           _smallCaught++;
+          HapticFeedback.lightImpact();
         }
       }
     }
